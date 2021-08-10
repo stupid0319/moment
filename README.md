@@ -21,7 +21,7 @@ An ISO 8601 string requires a date part.
 | 2013-W06-5 | A week date part |
 | 2013-039 | An ordinal date part |
 | 20130208 | Basic (short) full date |
-| 201303 | asic (short) year+month |
+| 201303 | Basic (short) year+month |
 | 2013 | Basic (short) year only |
 | 2013W065 | Basic (short) week, weekday |
 | 2013W06 | Basic (short) week only |
