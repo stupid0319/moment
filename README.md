@@ -7,7 +7,7 @@ pMoment pmo = Moment_Now();  //Now Time
 ## pMoment Moment_Second(time_t unixtime);
 pMoment pmo = Moment_Second(1628578601);
 ## pMoment Moment_Millisecond(long int millisecond);
-pMoment pmo = Moment_Second(1628578601000);
+pMoment pmo = Moment_Millisecond(1628578601000);
 ## pMoment Moment_Clone(pMoment pmo_);
 pMoment pmo = Moment_Clone(pmo_);
 ## pMoment Moment_Parse(char *string);
