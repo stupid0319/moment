@@ -53,6 +53,33 @@ static int atoi_len(char *s, int len)
     return value;
 }
 
+static char * stndrdth(int number)
+{
+    static char * st = "st";
+    static char * nd = "nd";
+    static char * rd = "rd";
+    static char * th = "th";
+    int last = 0;
+    if (number > 3 && number <= 20)
+    {
+        return th;
+    }
+    last = number % 10;
+    if (last == 1)
+    {
+        return st;
+    }
+    else if (last == 2)
+    {
+        return nd;
+    }
+    else if (last == 3)
+    {
+        return rd;
+    }
+    return th;
+}
+
 // Create
 pMoment Moment_Now()
 {
@@ -468,22 +495,7 @@ size_t head_patten_to_str(
     }
     else if (strncmp(format, "DDDo", 4) == 0)
     {
-        if (pmo->timetm.tm_yday == 0)
-        {
-            outlen = snprintf(out, outSize, "1st");
-        }
-        else if (pmo->timetm.tm_yday == 1)
-        {
-            outlen = snprintf(out, outSize, "2nd");
-        }
-        else if (pmo->timetm.tm_yday == 2)
-        {
-            outlen = snprintf(out, outSize, "3rd");
-        }
-        else
-        {
-            outlen = snprintf(out, outSize, "%dth", pmo->timetm.tm_yday + 1);
-        }
+        outlen = snprintf(out, outSize, "%d%s", pmo->timetm.tm_yday + 1, stndrdth(pmo->timetm.tm_yday + 1));
         *handledLen += 4;
         return outlen;
     }
@@ -501,22 +513,7 @@ size_t head_patten_to_str(
     }
     else if (strncmp(format, "Do", 2) == 0)
     {
-        if (pmo->timetm.tm_mday == 1)
-        {
-            outlen = snprintf(out, outSize, "1st");
-        }
-        else if (pmo->timetm.tm_mday == 2)
-        {
-            outlen = snprintf(out, outSize, "2nd");
-        }
-        else if (pmo->timetm.tm_mday == 3)
-        {
-            outlen = snprintf(out, outSize, "3rd");
-        }
-        else
-        {
-            outlen = snprintf(out, outSize, "%dth", pmo->timetm.tm_mday);
-        }
+        outlen = snprintf(out, outSize, "%d%s", pmo->timetm.tm_mday, stndrdth(pmo->timetm.tm_mday));
         *handledLen += 2;
         return outlen;
     }
@@ -549,22 +546,7 @@ size_t head_patten_to_str(
     }
     else if (strncmp(format, "do", 2) == 0)
     {
-        if (pmo->timetm.tm_wday == 1)
-        {
-            outlen = snprintf(out, outSize, "1st");
-        }
-        else if (pmo->timetm.tm_wday == 2)
-        {
-            outlen = snprintf(out, outSize, "2nd");
-        }
-        else if (pmo->timetm.tm_wday == 3)
-        {
-            outlen = snprintf(out, outSize, "3rd");
-        }
-        else
-        {
-            outlen = snprintf(out, outSize, "%dth", pmo->timetm.tm_wday);
-        }
+        outlen = snprintf(out, outSize, "%d%s", pmo->timetm.tm_wday, stndrdth(pmo->timetm.tm_wday));
         *handledLen += 2;
         return outlen;
     }
@@ -601,22 +583,7 @@ size_t head_patten_to_str(
     else if (strncmp(format, "wo", 2) == 0 || strncmp(format, "Wo", 2) == 0)
     {
         int wy = 1 + pmo->timetm.tm_yday / 7;
-        if (wy == 1)
-        {
-            outlen = snprintf(out, outSize, "1st");
-        }
-        else if (wy == 2)
-        {
-            outlen = snprintf(out, outSize, "2nd");
-        }
-        else if (wy == 3)
-        {
-            outlen = snprintf(out, outSize, "3rd");
-        }
-        else
-        {
-            outlen = snprintf(out, outSize, "%dth", wy);
-        }
+        outlen = snprintf(out, outSize, "%d%s", wy, stndrdth(wy));
         *handledLen += 2;
         return outlen;
     }

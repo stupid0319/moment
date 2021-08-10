@@ -23,11 +23,12 @@ extern "C"
     pMoment Moment_Now();
     pMoment Moment_Clone(pMoment pmo_);
     pMoment Moment_Second(time_t unixtime);
+    pMoment Moment_Millisecond(long int millisecond);
+    pMoment Moment_Parse(char *string);
 
     // Set
     pMoment Moment_Set_Clone(pMoment pmo, pMoment pmo_);
     pMoment Moment_Set_utcOffset(pMoment pmo, int utcOffset);
-    pMoment Moment_Parse(char *string);
 
     // Get
     time_t Moment_Get_Sec(pMoment moment);
