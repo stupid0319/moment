@@ -7,9 +7,9 @@
 
 #include "moment.h"
 
-static int time_offset(int *isdst)
+static int time_offset(time_t t, int *isdst)
 {
-    time_t gmt, rawtime = time(NULL);
+    time_t gmt, rawtime = t;
     struct tm *ptm;
 
 #if !defined(WIN32)
@@ -94,7 +94,7 @@ pMoment Moment_Now()
     ret = gettimeofday(&tv, NULL);
     pmo->sec = tv.tv_sec;
     pmo->usec = tv.tv_usec;
-    pmo->utcOffset = time_offset(&pmo->isdst);
+    pmo->utcOffset = time_offset(tv.tv_sec, &pmo->isdst);
     return pmo;
 }
 
@@ -118,7 +118,7 @@ pMoment Moment_Second(time_t unixtime)
     }
     memset(pmo, 0, sizeof(Moment));
     pmo->sec = unixtime;
-    pmo->utcOffset = time_offset(&pmo->isdst);
+    pmo->utcOffset = time_offset(pmo->sec, &pmo->isdst);
     return pmo;
 }
 
@@ -133,7 +133,7 @@ pMoment Moment_Millisecond(
     memset(pmo, 0, sizeof(Moment));
     pmo->sec = millisecond / 1000;
     pmo->usec = (millisecond % 1000) * 1000;
-    pmo->utcOffset = time_offset(&pmo->isdst);
+    pmo->utcOffset = time_offset(pmo->sec, &pmo->isdst);
     return pmo;
 }
 
@@ -152,7 +152,7 @@ pMoment Moment_Set_Now(
     gettimeofday(&tv, NULL);
     pmo->sec = tv.tv_sec;
     pmo->usec = tv.tv_usec;
-    pmo->utcOffset = time_offset(&pmo->isdst);
+    pmo->utcOffset = time_offset(tv.tv_sec, &pmo->isdst);
     return pmo;
 }
 
