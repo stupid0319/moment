@@ -730,6 +730,30 @@ size_t head_patten_to_str(
         return outlen;
     }
 
+    // Pure text
+    else if (strncmp(format, "[", 1) == 0)
+    {
+        int i = 1; 
+        int j = outSize;
+        while (*(format + i) != '\0' && *(format + i) != ']')
+        {
+            if (j > 0)
+            {
+                *(out + i - 1) = *(format + i);
+                outlen++;
+                j--;
+                i++;
+            }
+            else
+            {
+                i++;
+                break;
+            }
+        }
+        *handledLen += (i + 1);
+        return outlen;
+    }
+
     *out = *format;
     *handledLen += 1;
     return 1;

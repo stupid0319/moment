@@ -60,6 +60,8 @@ Moment_Format(pmo, "dddd, MMMM Do YYYY, h:mm:ss a");  // "Sunday, February 14th 
 
 Moment_Format(pmo, "ddd, hA"); // "Sun, 3PM"
 
+Moment_Format(pmo, "YYYY/MM/DD [is] dddd"); // "2021/08/09 is Monday"
+
 |  | Token | Output |
 | ---  | --- | --- |
 | Month | M | 1 2 ... 11 12 |
@@ -107,6 +109,7 @@ Moment_Format(pmo, "ddd, hA"); // "Sun, 3PM"
 | | ZZ | -0700 -0600 ... +0600 +0700 |
 | Unix Timestamp | X |1360013296 |
 | Unix Millisecond Timestamp | x | 1360013296123 |
+| Pure text | [...] | [Today is] |
 ***
 # Add / Subtract moment object
 ## pMoment Moment_Add(pMoment pmo, long int number, char *string);
