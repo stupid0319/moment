@@ -34,7 +34,14 @@ extern "C"
     time_t Moment_Get_Sec(pMoment moment);
     time_t Moment_Get_Millisecond(pMoment pmo);
 
+    // Max
+    pMoment Moment_Max(pMoment pmo, ...);
+
+    // Min
+    pMoment Moment_Min(pMoment pmo, ...);
+
     // Display
+    char *Moment_strftime(pMoment pmo, char *format);
     char *Moment_Format(pMoment pmo, char *format);
 
     // Calculate

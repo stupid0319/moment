@@ -38,19 +38,27 @@ An ISO 8601 string requires a date part.
 | 20130208T0809 | Short date and time up to minutes |
 | 20130208T08 | Short date and time, hours only |
 ***
-# Clear moment object
+# Clear moment object.
 ## void Moment_Clear(pMoment pmo);
 Moment_Clear(pmo);  //clear moment object
 ***
-# Set moment object
+# Set moment object.
 ## pMoment Moment_Set_Clone(pMoment pmo, pMoment pmo_);
 Moment_Set_Clone(pmo, pmo_); //return origin pmo object point;
 ## pMoment Moment_Set_utcOffset(pMoment pmo, int utcOffset);
 Moment_Set_utcOffset(pmo, 28800);  //set +8 timezone and return origin pmo;
 ***
-# Get moment object value
+# Get moment object value.
 ## time_t Moment_Get_Sec(pMoment moment);
 ## time_t Moment_Get_Millisecond(pMoment pmo);
+***
+# Get the maximum of the given moment instances. 
+## pMoment Moment_Max(pMoment pmo, ...);
+Moment_Max(a, b, c, d, e, NULL); //last param is NULL
+***
+# Get the minimum of the given moment instances.
+## pMoment Moment_Min(pMoment pmo, ...);
+Moment_Min(a, b, c, d, e, NULL); //last param is NULL
 ***
 # Format moment object and return formated string
 ## char *Moment_Format(pMoment pmo, char *format);
@@ -110,6 +118,10 @@ Moment_Format(pmo, "YYYY/MM/DD [is] dddd"); // "2021/08/09 is Monday"
 | Unix Timestamp | X |1360013296 |
 | Unix Millisecond Timestamp | x | 1360013296123 |
 | Pure text | [...] | [Today is] |
+***
+# Format by strftime 
+## char *Moment_strftime(pMoment pmo, char *format);
+Moment_strftime(mm, "%m/%d/%y %I:%M %p %Z"); //10/19/21 11:45 AM GMT
 ***
 # Add / Subtract moment object
 ## pMoment Moment_Add(pMoment pmo, long int number, char *string);

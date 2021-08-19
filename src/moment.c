@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "moment.h"
 
@@ -36,7 +37,6 @@ static int isDigit(char *s, int len)
     {
         if (!isdigit(*(s + i)))
         {
-
             return 0;
         }
     }
@@ -53,12 +53,12 @@ static int atoi_len(char *s, int len)
     return value;
 }
 
-static char * stndrdth(int number)
+static char *stndrdth(int number)
 {
-    static char * st = "st";
-    static char * nd = "nd";
-    static char * rd = "rd";
-    static char * th = "th";
+    static char *st = "st";
+    static char *nd = "nd";
+    static char *rd = "rd";
+    static char *th = "th";
     int last = 0;
     if (number > 3 && number <= 20)
     {
@@ -78,6 +78,21 @@ static char * stndrdth(int number)
         return rd;
     }
     return th;
+}
+
+static void mallocStringBuffer(pMoment pmo, int size)
+{
+    if (pmo->outputSize != 0 && pmo->outputSize < size)
+    {
+        free(pmo->outputStr);
+        pmo->outputSize = 0;
+    }
+
+    if (pmo->outputSize == 0)
+    {
+        pmo->outputSize = size;
+        pmo->outputStr = (char *)malloc(pmo->outputSize);
+    }
 }
 
 // Create
@@ -122,8 +137,7 @@ pMoment Moment_Second(time_t unixtime)
     return pmo;
 }
 
-pMoment Moment_Millisecond(
-    long int millisecond)
+pMoment Moment_Millisecond(long int millisecond)
 {
     pMoment pmo = (pMoment)malloc(sizeof(Moment));
     if (pmo == NULL)
@@ -137,16 +151,13 @@ pMoment Moment_Millisecond(
     return pmo;
 }
 
-pMoment Moment_Set_Clone(
-    pMoment pmo,
-    pMoment pmo_)
+pMoment Moment_Set_Clone(pMoment pmo, pMoment pmo_)
 {
     memcpy(pmo, pmo_, sizeof(Moment));
     return pmo;
 }
 
-pMoment Moment_Set_Now(
-    pMoment pmo)
+pMoment Moment_Set_Now(pMoment pmo)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -157,8 +168,7 @@ pMoment Moment_Set_Now(
 }
 
 // Supported ISO 8601 strings , not valid return NULL;
-pMoment Moment_Parse(
-    char *string)
+pMoment Moment_Parse(char *string)
 {
     pMoment pmo = (pMoment)malloc(sizeof(Moment));
     if (pmo == NULL)
@@ -397,7 +407,7 @@ pMoment Moment_Parse(
     return pmo;
 }
 
-//
+// Get
 time_t Moment_Get_Sec(pMoment pmo)
 {
     return pmo->sec;
@@ -406,6 +416,58 @@ time_t Moment_Get_Sec(pMoment pmo)
 time_t Moment_Get_Millisecond(pMoment pmo)
 {
     return pmo->sec * 1000 + pmo->usec / 1000;
+}
+
+// return the max one
+pMoment Moment_Max(pMoment pmo, ...)
+{
+    va_list ap;
+    pMoment i = NULL;
+    pMoment MaxOne = NULL;
+    va_start(ap, pmo);
+    for (i = pmo; i != NULL; i = va_arg(ap, pMoment))
+    {
+        if (MaxOne == NULL)
+        {
+            MaxOne = i;
+        }
+        else if (MaxOne->sec < i->sec)
+        {
+            MaxOne = i;
+        }
+        else if (MaxOne->sec == i->sec && MaxOne->usec < i->usec)
+        {
+            MaxOne = i;
+        }
+    }
+    va_end(ap);
+    return MaxOne;
+}
+
+// return the min one
+pMoment Moment_Min(pMoment pmo, ...)
+{
+    va_list ap;
+    pMoment i = NULL;
+    pMoment MinOne = NULL;
+    va_start(ap, pmo);
+    for (i = pmo; i != NULL; i = va_arg(ap, pMoment))
+    {
+        if (MinOne == NULL)
+        {
+            MinOne = i;
+        }
+        else if (MinOne->sec > i->sec)
+        {
+            MinOne = i;
+        }
+        else if (MinOne->sec == i->sec && MinOne->usec > i->usec)
+        {
+            MinOne = i;
+        }
+    }
+    va_end(ap);
+    return MinOne;
 }
 
 // return maked str length
@@ -733,7 +795,7 @@ size_t head_patten_to_str(
     // Pure text
     else if (strncmp(format, "[", 1) == 0)
     {
-        int i = 1; 
+        int i = 1;
         int j = outSize;
         while (*(format + i) != '\0' && *(format + i) != ']')
         {
@@ -759,10 +821,19 @@ size_t head_patten_to_str(
     return 1;
 }
 
+// strftime
+char *Moment_strftime(pMoment pmo, char *format)
+{
+    mallocStringBuffer(pmo, strlen(format) * 20);
+    //renew tm
+    time_t tztime = pmo->sec + pmo->utcOffset;
+    gmtime_r(&tztime, &pmo->timetm);
+    strftime(pmo->outputStr, pmo->outputSize, format, &pmo->timetm);
+    return pmo->outputStr;
+}
+
 // Format
-char *Moment_Format(
-    pMoment pmo,
-    char *format)
+char *Moment_Format(pMoment pmo, char *format)
 {
     static char *nan = "Invalid date";
     // "2014-09-08T08:02:17-05:00" (ISO 8601, no fractional seconds)
@@ -794,18 +865,7 @@ char *Moment_Format(
             formatLen = strlen(workFormat);
         }
     }
-
-    if (pmo->outputSize < formatLen * 3)
-    {
-        free(pmo->outputStr);
-        pmo->outputSize = 0;
-    }
-
-    if (pmo->outputSize == 0)
-    {
-        pmo->outputSize = formatLen * 3;
-        pmo->outputStr = (char *)malloc(pmo->outputSize);
-    }
+    mallocStringBuffer(pmo, formatLen * 3);
 
     //renew tm
     tztime = pmo->sec + pmo->utcOffset;
@@ -825,25 +885,19 @@ char *Moment_Format(
 }
 
 // TimeZone
-pMoment Moment_Set_utcOffset(
-    pMoment pmo,
-    int utcOffset)
+pMoment Moment_Set_utcOffset(pMoment pmo, int utcOffset)
 {
     pmo->utcOffset = utcOffset;
     return pmo;
 }
 
-int Moment_Get_utcOffset(
-    pMoment pmo)
+int Moment_Get_utcOffset(pMoment pmo)
 {
     return pmo->utcOffset;
 }
 
 // Add and Subtract
-pMoment Moment_Add(
-    pMoment pmo,
-    long int number,
-    char *string)
+pMoment Moment_Add(pMoment pmo, long int number, char *string)
 {
     time_t tztime;
 
@@ -890,18 +944,13 @@ pMoment Moment_Add(
     return pmo;
 }
 
-pMoment Moment_Subtract(
-    pMoment pmo,
-    long int number,
-    char *string)
+pMoment Moment_Subtract(pMoment pmo, long int number, char *string)
 {
     return Moment_Add(pmo, -number, string);
 }
 
 // Start of Time
-pMoment Moment_StartOf(
-    pMoment pmo,
-    char *string)
+pMoment Moment_StartOf(pMoment pmo, char *string)
 {
     time_t tztime;
     if (strcmp(string, "year") == 0)
@@ -973,9 +1022,7 @@ pMoment Moment_StartOf(
 }
 
 // End of Time
-pMoment Moment_EndOf(
-    pMoment pmo,
-    char *string)
+pMoment Moment_EndOf(pMoment pmo, char *string)
 {
     time_t tztime;
     if (strcmp(string, "year") == 0)
@@ -1028,8 +1075,7 @@ pMoment Moment_EndOf(
 }
 
 // clear
-void Moment_Clear(
-    pMoment pmo)
+void Moment_Clear(pMoment pmo)
 {
     if (pmo->outputStr != NULL)
     {
