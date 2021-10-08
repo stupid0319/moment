@@ -167,6 +167,12 @@ pMoment Moment_Set_Now(pMoment pmo)
     return pmo;
 }
 
+pMoment Moment_Set_Second(pMoment pmo, time_t unixtime)
+{
+    pmo->sec = unixtime;
+    return pmo;
+}
+
 // Supported ISO 8601 strings , not valid return NULL;
 pMoment Moment_Parse(char *string)
 {
@@ -1073,6 +1079,16 @@ pMoment Moment_EndOf(pMoment pmo, char *string)
     }
     return pmo;
 }
+
+// fromNow
+/*
+void Moment_FromNow(
+    pMoment pmo) 
+{
+    mallocStringBuffer(pmo, 64);
+    time_t now_t = time(NULL);
+}
+*/
 
 // clear
 void Moment_Clear(pMoment pmo)

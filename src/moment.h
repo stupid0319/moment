@@ -3,6 +3,8 @@
 
 #include <time.h>
 
+#define VERSION "0.0.0.1"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -29,6 +31,8 @@ extern "C"
     // Set
     pMoment Moment_Set_Clone(pMoment pmo, pMoment pmo_);
     pMoment Moment_Set_utcOffset(pMoment pmo, int utcOffset);
+    pMoment Moment_Set_Now(pMoment pmo);
+    pMoment Moment_Set_Second(pMoment pmo, time_t unixtime);
 
     // Get
     time_t Moment_Get_Sec(pMoment moment);
