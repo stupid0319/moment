@@ -12,8 +12,8 @@ extern "C"
 
     typedef struct Moment_
     {
-        long long sec;  /* seconds part */
-        long long usec; /* microseconds part */
+        long int sec;  /* seconds part */
+        long int usec; /* microseconds part */
         struct tm timetm;
         int utcOffset;
         int isdst;
