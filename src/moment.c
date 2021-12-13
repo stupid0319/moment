@@ -138,7 +138,7 @@ pMoment Moment_Second(time_t unixtime)
     return pmo;
 }
 
-pMoment Moment_Millisecond(long long millisecond)
+pMoment Moment_Millisecond(long int millisecond)
 {
     pMoment pmo = (pMoment)malloc(sizeof(Moment));
     if (pmo == NULL)
@@ -897,7 +897,7 @@ int Moment_Get_utcOffset(pMoment pmo)
 }
 
 // Add and Subtract
-pMoment Moment_Add(pMoment pmo, long long number, char *string)
+pMoment Moment_Add(pMoment pmo, long int number, char *string)
 {
     time_t tztime;
 
@@ -944,7 +944,7 @@ pMoment Moment_Add(pMoment pmo, long long number, char *string)
     return pmo;
 }
 
-pMoment Moment_Subtract(pMoment pmo, long long number, char *string)
+pMoment Moment_Subtract(pMoment pmo, long int number, char *string)
 {
     return Moment_Add(pmo, -number, string);
 }
