@@ -25,7 +25,7 @@ extern "C"
     pMoment Moment_Now();
     pMoment Moment_Clone(pMoment pmo_);
     pMoment Moment_Second(time_t unixtime);
-    pMoment Moment_Millisecond(long long millisecond);
+    pMoment Moment_Millisecond(long int millisecond);
     pMoment Moment_Parse(char *string);
 
     // Set
@@ -47,8 +47,8 @@ extern "C"
     char *Moment_Format(pMoment pmo, char *format);
 
     // Calculate
-    pMoment Moment_Add(pMoment pmo, long long number, char *string);
-    pMoment Moment_Subtract(pMoment pmo, long long number, char *string);
+    pMoment Moment_Add(pMoment pmo, long int number, char *string);
+    pMoment Moment_Subtract(pMoment pmo, long int number, char *string);
 
     pMoment Moment_StartOf(pMoment pmo, char *string);
     pMoment Moment_EndOf(pMoment pmo, char *string);
