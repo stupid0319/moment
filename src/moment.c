@@ -11,7 +11,7 @@
 static int time_offset(time_t t, int *isdst)
 {
     time_t gmt, rawtime = t;
-    struct tm *ptm = NULL;
+    struct tm *ptm;
 
 #if !defined(WIN32)
     struct tm gbuf;
@@ -21,7 +21,7 @@ static int time_offset(time_t t, int *isdst)
 #endif
     // Request that mktime() looksup dst in timezone database
     ptm->tm_isdst = -1;
-    gmt = mktime(&gbuf);
+    gmt = mktime(ptm);
 
     if (isdst != NULL)
     {
@@ -91,8 +91,7 @@ static void mallocStringBuffer(pMoment pmo, int size)
     if (pmo->outputSize == 0)
     {
         pmo->outputSize = size;
-        pmo->outputStr = (char *)malloc(size);
-        memset(pmo->outputStr, 0, pmo->outputSize);
+        pmo->outputStr = (char *)malloc(pmo->outputSize);
     }
 }
 
@@ -165,6 +164,12 @@ pMoment Moment_Set_Now(pMoment pmo)
     pmo->sec = tv.tv_sec;
     pmo->usec = tv.tv_usec;
     pmo->utcOffset = time_offset(tv.tv_sec, &pmo->isdst);
+    return pmo;
+}
+
+pMoment Moment_Set_Second(pMoment pmo, time_t unixtime)
+{
+    pmo->sec = unixtime;
     return pmo;
 }
 
@@ -870,7 +875,7 @@ char *Moment_Format(pMoment pmo, char *format)
 
     //renew tm
     tztime = pmo->sec + pmo->utcOffset;
-    gmtime_r(&tztime, &pmo->timetm);    
+    gmtime_r(&tztime, &pmo->timetm);
 
     while (handledLen < formatLen)
     {
@@ -881,6 +886,7 @@ char *Moment_Format(pMoment pmo, char *format)
             workFormat + handledLen,
             &handledLen);
     }
+
     return pmo->outputStr;
 }
 
