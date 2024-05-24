@@ -370,9 +370,15 @@ pMoment Moment_Parse(char *string)
             if (isDigit(string + i, 2))
             {
                 pmo->timetm.tm_sec = atoi_len(string + i, 2);
-
+                if (*(string + i + 2) == '.')
+                {
+                    step = 6;
+                }
+                else
+                {
+                    step = 7;
+                }
                 i += *(string + i + 2) == '.' || *(string + i + 2) == ',' ? 2 : 1;
-                step = 6;
             }
             else
             {
