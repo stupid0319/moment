@@ -185,6 +185,102 @@ static void test_add_subtract_start_end_of(void)
     Moment_Clear(p);
 }
 
+static void test_iso_week(void)
+{
+    /* 2013-01-01 (Tuesday) -> ISO week 1 */
+    pMoment p = Moment_Parse("2013-01-01T00:00:00Z");
+    CHECK(p != NULL, "ISO week: parse 2013-01-01 failed");
+    if (p != NULL)
+    {
+        CHECK(strcmp(Moment_Format(p, "W"), "1") == 0, "ISO W: 2013-01-01 should be 1");
+        CHECK(strcmp(Moment_Format(p, "WW"), "01") == 0, "ISO WW: 2013-01-01 should be 01");
+        Moment_Clear(p);
+    }
+
+    /* 2013-12-29 (Sunday) -> ISO week 52 */
+    p = Moment_Parse("2013-12-29T00:00:00Z");
+    CHECK(p != NULL, "ISO week: parse 2013-12-29 failed");
+    if (p != NULL)
+    {
+        CHECK(strcmp(Moment_Format(p, "W"), "52") == 0, "ISO W: 2013-12-29 should be 52");
+        Moment_Clear(p);
+    }
+
+    /* 2013-12-30 (Monday) -> belongs to ISO week 1 of 2014 */
+    p = Moment_Parse("2013-12-30T00:00:00Z");
+    CHECK(p != NULL, "ISO week: parse 2013-12-30 failed");
+    if (p != NULL)
+    {
+        CHECK(strcmp(Moment_Format(p, "W"), "1") == 0, "ISO W: 2013-12-30 should be 1 (week 1 of 2014)");
+        Moment_Clear(p);
+    }
+
+    /* 2015-12-31 (Thursday) -> ISO week 53 (2015 has a week 53) */
+    p = Moment_Parse("2015-12-31T00:00:00Z");
+    CHECK(p != NULL, "ISO week: parse 2015-12-31 failed");
+    if (p != NULL)
+    {
+        CHECK(strcmp(Moment_Format(p, "W"), "53") == 0, "ISO W: 2015-12-31 should be 53");
+        Moment_Clear(p);
+    }
+
+    /* 2016-01-04 (Monday) -> ISO week 1 */
+    p = Moment_Parse("2016-01-04T00:00:00Z");
+    CHECK(p != NULL, "ISO week: parse 2016-01-04 failed");
+    if (p != NULL)
+    {
+        CHECK(strcmp(Moment_Format(p, "W"), "1") == 0, "ISO W: 2016-01-04 should be 1");
+        Moment_Clear(p);
+    }
+}
+
+static void test_diff(void)
+{
+    pMoment a = Moment_Parse("2021-08-10T00:00:00Z");
+    pMoment b = Moment_Parse("2021-08-09T00:00:00Z");
+    CHECK(a != NULL && b != NULL, "Moment_Diff: parse failed");
+    if (a != NULL && b != NULL)
+    {
+        CHECK(Moment_Diff(a, b, "days")    ==  1,     "Diff days a-b should be 1");
+        CHECK(Moment_Diff(b, a, "days")    == -1,     "Diff days b-a should be -1");
+        CHECK(Moment_Diff(a, b, "hours")   == 24,     "Diff hours should be 24");
+        CHECK(Moment_Diff(a, b, "minutes") == 1440,   "Diff minutes should be 1440");
+        CHECK(Moment_Diff(a, b, "seconds") == 86400,  "Diff seconds should be 86400");
+        CHECK(Moment_Diff(a, b, "ms")      == 86400000L, "Diff ms should be 86400000");
+        CHECK(Moment_Diff(a, b, "weeks")   == 0,      "Diff weeks <7 days should be 0");
+    }
+    Moment_Clear(a);
+    Moment_Clear(b);
+
+    /* exact year boundary */
+    pMoment y2 = Moment_Parse("2022-08-09T00:00:00Z");
+    pMoment y1 = Moment_Parse("2021-08-09T00:00:00Z");
+    CHECK(y2 != NULL && y1 != NULL, "Moment_Diff year: parse failed");
+    if (y2 != NULL && y1 != NULL)
+    {
+        CHECK(Moment_Diff(y2, y1, "years")  ==  1, "Diff: exactly 1 year");
+        CHECK(Moment_Diff(y1, y2, "years")  == -1, "Diff: exactly -1 year");
+        CHECK(Moment_Diff(y2, y1, "months") == 12, "Diff: 12 months");
+    }
+    Moment_Clear(y2);
+    Moment_Clear(y1);
+
+    /* partial year: 2021-08-09 -> 2022-02-09 = 6 months, 0 full years */
+    pMoment p1 = Moment_Parse("2022-02-09T00:00:00Z");
+    pMoment p0 = Moment_Parse("2021-08-09T00:00:00Z");
+    CHECK(p1 != NULL && p0 != NULL, "Moment_Diff partial: parse failed");
+    if (p1 != NULL && p0 != NULL)
+    {
+        CHECK(Moment_Diff(p1, p0, "years")  == 0, "Diff partial year should be 0");
+        CHECK(Moment_Diff(p1, p0, "months") == 6, "Diff partial months should be 6");
+    }
+    Moment_Clear(p1);
+    Moment_Clear(p0);
+
+    /* NULL safety */
+    CHECK(Moment_Diff(NULL, NULL, "days") == 0, "Moment_Diff(NULL,NULL) should be 0");
+}
+
 int main(void)
 {
     test_create_get_clear();
@@ -192,6 +288,8 @@ int main(void)
     test_parse_and_format();
     test_set_get_offset_min_max();
     test_add_subtract_start_end_of();
+    test_iso_week();
+    test_diff();
 
     printf("[RESULT] passed=%d failed=%d\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

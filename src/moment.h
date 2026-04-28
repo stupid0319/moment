@@ -50,6 +50,7 @@ extern "C"
     // Calculate
     pMoment Moment_Add(pMoment pmo, long int number, char *string);
     pMoment Moment_Subtract(pMoment pmo, long int number, char *string);
+    long int Moment_Diff(pMoment a, pMoment b, char *unit);
 
     pMoment Moment_StartOf(pMoment pmo, char *string);
     pMoment Moment_EndOf(pMoment pmo, char *string);

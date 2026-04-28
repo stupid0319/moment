@@ -80,6 +80,45 @@ static char *stndrdth(int number)
     return th;
 }
 
+static int iso_week_number(const struct tm *t)
+{
+    /* ISO 8601: week containing the first Thursday is week 1;
+       Monday = first day of week.  Returns 1..53. */
+    int yday = t->tm_yday + 1;                        /* 1-based */
+    int wday = (t->tm_wday == 0) ? 7 : t->tm_wday;   /* Mon=1 Sun=7 */
+    int w    = (yday - wday + 10) / 7;
+
+    if (w < 1)
+    {
+        /* belongs to last week of previous year; Dec 28 always lies there */
+        struct tm dec28 = {0};
+        struct tm r;
+        dec28.tm_year   = t->tm_year - 1;
+        dec28.tm_mon    = 11;
+        dec28.tm_mday   = 28;
+        time_t t_dec28  = timegm(&dec28);
+        gmtime_r(&t_dec28, &r);
+        int py = r.tm_yday + 1;
+        int pw = (r.tm_wday == 0) ? 7 : r.tm_wday;
+        w      = (py - pw + 10) / 7;
+    }
+    else if (w >= 53)
+    {
+        /* week 53 valid only if Jan 1 of next year is Fri/Sat/Sun */
+        struct tm jan1 = {0};
+        struct tm r;
+        jan1.tm_year   = t->tm_year + 1;
+        jan1.tm_mon    = 0;
+        jan1.tm_mday   = 1;
+        time_t t_jan1  = timegm(&jan1);
+        gmtime_r(&t_jan1, &r);
+        int nwday = (r.tm_wday == 0) ? 7 : r.tm_wday;
+        if (nwday <= 4)   /* Mon–Thu: that Jan 1 starts week 1 of next year */
+            w = 1;
+    }
+    return w;
+}
+
 static int mallocStringBuffer(pMoment pmo, int size)
 {
     char *newBuffer = NULL;
@@ -596,7 +635,7 @@ size_t head_patten_to_str(
         *handledLen += 2;
         return outlen;
     }
-    else if (strncmp(format, "Y", 2) == 0)
+    else if (strncmp(format, "Y", 1) == 0)
     {
         outlen = snprintf(out, outSize, "%d", pmo->timetm.tm_year + 1900);
         *handledLen += 1;
@@ -738,24 +777,45 @@ size_t head_patten_to_str(
         return outlen;
     }
 
-    // Week of Year	, Week of Year (ISO)
-    else if (strncmp(format, "ww", 2) == 0 || strncmp(format, "WW", 2) == 0)
+    // Week of Year (locale, Sunday-first, 1-based)
+    else if (strncmp(format, "ww", 2) == 0)
     {
         outlen = snprintf(out, outSize, "%02d", 1 + pmo->timetm.tm_yday / 7);
         *handledLen += 2;
         return outlen;
     }
-    else if (strncmp(format, "wo", 2) == 0 || strncmp(format, "Wo", 2) == 0)
+    else if (strncmp(format, "wo", 2) == 0)
     {
         int wy = 1 + pmo->timetm.tm_yday / 7;
         outlen = snprintf(out, outSize, "%d%s", wy, stndrdth(wy));
         *handledLen += 2;
         return outlen;
     }
-    else if (strncmp(format, "w", 2) == 0 || strncmp(format, "W", 2) == 0)
+    else if (strncmp(format, "w", 1) == 0)
     {
         outlen = snprintf(out, outSize, "%d", 1 + pmo->timetm.tm_yday / 7);
+        *handledLen += 1;
+        return outlen;
+    }
+
+    // Week of Year (ISO 8601, Monday-first)
+    else if (strncmp(format, "WW", 2) == 0)
+    {
+        outlen = snprintf(out, outSize, "%02d", iso_week_number(&pmo->timetm));
         *handledLen += 2;
+        return outlen;
+    }
+    else if (strncmp(format, "Wo", 2) == 0)
+    {
+        int iw = iso_week_number(&pmo->timetm);
+        outlen = snprintf(out, outSize, "%d%s", iw, stndrdth(iw));
+        *handledLen += 2;
+        return outlen;
+    }
+    else if (strncmp(format, "W", 1) == 0)
+    {
+        outlen = snprintf(out, outSize, "%d", iso_week_number(&pmo->timetm));
+        *handledLen += 1;
         return outlen;
     }
 
@@ -1261,4 +1321,77 @@ int Moment_snprintf(char *s, size_t n, char *format, time_t sec)
     len = snprintf(s, n, "%s", Moment_Format(pmo, format));
     Moment_Clear(pmo);
     return len;
+}
+
+// Diff
+long int Moment_Diff(pMoment a, pMoment b, char *unit)
+{
+    time_t    tztime_a, tztime_b;
+    struct tm tm_a, tm_b;
+
+    if (a == NULL || b == NULL || unit == NULL)
+    {
+        return 0;
+    }
+
+    if (strcmp(unit, "years") == 0 || strcmp(unit, "y") == 0)
+    {
+        tztime_a        = a->sec + a->utcOffset;
+        tztime_b        = b->sec + b->utcOffset;
+        gmtime_r(&tztime_a, &tm_a);
+        gmtime_r(&tztime_b, &tm_b);
+        long int years  = (long int)(tm_a.tm_year - tm_b.tm_year);
+        struct tm check = tm_b;
+        check.tm_year   = tm_a.tm_year;
+        time_t check_t  = timegm(&check);
+        if (years > 0 && tztime_a < check_t)
+            years--;
+        else if (years < 0 && tztime_a > check_t)
+            years++;
+        return years;
+    }
+    else if (strcmp(unit, "months") == 0 || strcmp(unit, "M") == 0)
+    {
+        tztime_a          = a->sec + a->utcOffset;
+        tztime_b          = b->sec + b->utcOffset;
+        gmtime_r(&tztime_a, &tm_a);
+        gmtime_r(&tztime_b, &tm_b);
+        long int months   = (long int)(tm_a.tm_year - tm_b.tm_year) * 12
+                          + (long int)(tm_a.tm_mon  - tm_b.tm_mon);
+        struct tm check   = tm_b;
+        check.tm_year     = tm_a.tm_year;
+        check.tm_mon      = tm_a.tm_mon;
+        time_t check_t    = timegm(&check);
+        if (months > 0 && tztime_a < check_t)
+            months--;
+        else if (months < 0 && tztime_a > check_t)
+            months++;
+        return months;
+    }
+    else if (strcmp(unit, "weeks") == 0 || strcmp(unit, "w") == 0)
+    {
+        return (a->sec - b->sec) / 604800;
+    }
+    else if (strcmp(unit, "days") == 0 || strcmp(unit, "d") == 0)
+    {
+        return (a->sec - b->sec) / 86400;
+    }
+    else if (strcmp(unit, "hours") == 0 || strcmp(unit, "h") == 0)
+    {
+        return (a->sec - b->sec) / 3600;
+    }
+    else if (strcmp(unit, "minutes") == 0 || strcmp(unit, "m") == 0)
+    {
+        return (a->sec - b->sec) / 60;
+    }
+    else if (strcmp(unit, "seconds") == 0 || strcmp(unit, "s") == 0)
+    {
+        return a->sec - b->sec;
+    }
+    else if (strcmp(unit, "milliseconds") == 0 || strcmp(unit, "ms") == 0)
+    {
+        return (a->sec - b->sec) * 1000L
+             + (a->usec - b->usec) / 1000L;
+    }
+    return 0;
 }

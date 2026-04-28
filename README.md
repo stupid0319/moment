@@ -160,6 +160,29 @@ pMoment Moment_Subtract(pMoment m, long int number, char *unit);
 | seconds | s |
 | milliseconds | ms |
 
+### 4.6 計算時間差
+
+```c
+long int Moment_Diff(pMoment a, pMoment b, char *unit);
+```
+
+回傳 `a - b` 的整數差值（截斷向零）。`unit` 與 Add/Subtract 使用相同關鍵字。
+
+```c
+pMoment t1 = Moment_Parse("2022-08-09T00:00:00Z");
+pMoment t0 = Moment_Parse("2021-08-09T00:00:00Z");
+
+printf("%ld\n", Moment_Diff(t1, t0, "years"));    // 1
+printf("%ld\n", Moment_Diff(t1, t0, "months"));   // 12
+printf("%ld\n", Moment_Diff(t0, t1, "days"));     // -365
+
+Moment_Clear(t1);
+Moment_Clear(t0);
+```
+
+> 注意：`years` 與 `months` 依照曆月邊界計算，例如 2021-08-09 到 2022-02-09 = 6 個月。
+> `NULL` 輸入時回傳 0。
+
 ### 4.6 區間起訖
 
 ```c
@@ -188,7 +211,8 @@ pMoment Moment_EndOf(pMoment m, char *unit);
 | Day | `D` `DD` `Do` | `9` `09` `9th` |
 | Day of Year | `DDD` `DDDD` `DDDo` | `221` `221` `221st` |
 | Weekday | `d` `dd` `ddd` `dddd` `do` | `1` `Mo` `Mon` `Monday` `1st` |
-| Week | `w` `ww` `wo` / `W` `WW` `Wo` | `32` `32` `32nd` |
+| Week of Year (locale) | `w` `ww` `wo` | `32` `32` `32nd` |
+| Week of Year (ISO 8601) | `W` `WW` `Wo` | `32` `32` `32nd` |
 | Hour | `H` `HH` `h` `hh` `k` `kk` | `3` `03` `3` `03` `4` `04` |
 | Minute | `m` `mm` | `5` `05` |
 | Second | `s` `ss` | `7` `07` |
