@@ -45,6 +45,7 @@ extern "C"
     // Display
     char *Moment_strftime(pMoment pmo, char *format);
     char *Moment_Format(pMoment pmo, char *format);
+    int Moment_snprintf(char *s, size_t n, char *format, time_t sec);
 
     // Calculate
     pMoment Moment_Add(pMoment pmo, long int number, char *string);

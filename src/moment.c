@@ -35,7 +35,7 @@ static int isDigit(char *s, int len)
 {
     for (int i = 0; i < len; i++)
     {
-        if (!isdigit(*(s + i)))
+        if (!isdigit((unsigned char)*(s + i)))
         {
             return 0;
         }
@@ -80,25 +80,45 @@ static char *stndrdth(int number)
     return th;
 }
 
-static void mallocStringBuffer(pMoment pmo, int size)
+static int mallocStringBuffer(pMoment pmo, int size)
 {
-    if (pmo->outputSize != 0 && pmo->outputSize < size)
+    char *newBuffer = NULL;
+
+    if (pmo == NULL)
     {
-        free(pmo->outputStr);
-        pmo->outputSize = 0;
+        return 0;
     }
 
-    if (pmo->outputSize == 0)
+    if (size <= 0)
     {
-        pmo->outputSize = size;
-        pmo->outputStr = (char *)malloc(pmo->outputSize);
+        size = 1;
     }
+
+    if (pmo->outputStr != NULL && pmo->outputSize >= size)
+    {
+        return 1;
+    }
+
+    newBuffer = (char *)malloc((size_t)size);
+    if (newBuffer == NULL)
+    {
+        return 0;
+    }
+
+    if (pmo->outputStr != NULL)
+    {
+        free(pmo->outputStr);
+    }
+
+    pmo->outputStr = newBuffer;
+    pmo->outputSize = size;
+    pmo->outputStr[0] = '\0';
+    return 1;
 }
 
 // Create
 pMoment Moment_Now()
 {
-    int ret = 0;
     pMoment pmo = (pMoment)malloc(sizeof(Moment));
     if (pmo == NULL)
     {
@@ -106,7 +126,11 @@ pMoment Moment_Now()
     }
     memset(pmo, 0, sizeof(Moment));
     struct timeval tv;
-    ret = gettimeofday(&tv, NULL);
+    if (gettimeofday(&tv, NULL) != 0)
+    {
+        free(pmo);
+        return NULL;
+    }
     pmo->sec = tv.tv_sec;
     pmo->usec = tv.tv_usec;
     pmo->utcOffset = time_offset(tv.tv_sec, &pmo->isdst);
@@ -115,12 +139,30 @@ pMoment Moment_Now()
 
 pMoment Moment_Clone(pMoment pmo_)
 {
+    if (pmo_ == NULL)
+    {
+        return NULL;
+    }
+
     pMoment pmo = (pMoment)malloc(sizeof(Moment));
     if (pmo == NULL)
     {
         return NULL;
     }
     memcpy(pmo, pmo_, sizeof(Moment));
+    pmo->outputStr = NULL;
+    pmo->outputSize = 0;
+
+    if (pmo_->outputStr != NULL && pmo_->outputSize > 0)
+    {
+        if (!mallocStringBuffer(pmo, pmo_->outputSize))
+        {
+            free(pmo);
+            return NULL;
+        }
+        memcpy(pmo->outputStr, pmo_->outputStr, (size_t)pmo_->outputSize);
+    }
+
     return pmo;
 }
 
@@ -153,14 +195,44 @@ pMoment Moment_Millisecond(long int millisecond)
 
 pMoment Moment_Set_Clone(pMoment pmo, pMoment pmo_)
 {
+    if (pmo == NULL || pmo_ == NULL)
+    {
+        return NULL;
+    }
+
+    if (pmo->outputStr != NULL)
+    {
+        free(pmo->outputStr);
+    }
+
     memcpy(pmo, pmo_, sizeof(Moment));
+    pmo->outputStr = NULL;
+    pmo->outputSize = 0;
+
+    if (pmo_->outputStr != NULL && pmo_->outputSize > 0)
+    {
+        if (!mallocStringBuffer(pmo, pmo_->outputSize))
+        {
+            return NULL;
+        }
+        memcpy(pmo->outputStr, pmo_->outputStr, (size_t)pmo_->outputSize);
+    }
+
     return pmo;
 }
 
 pMoment Moment_Set_Now(pMoment pmo)
 {
+    if (pmo == NULL)
+    {
+        return NULL;
+    }
+
     struct timeval tv;
-    gettimeofday(&tv, NULL);
+    if (gettimeofday(&tv, NULL) != 0)
+    {
+        return NULL;
+    }
     pmo->sec = tv.tv_sec;
     pmo->usec = tv.tv_usec;
     pmo->utcOffset = time_offset(tv.tv_sec, &pmo->isdst);
@@ -169,13 +241,24 @@ pMoment Moment_Set_Now(pMoment pmo)
 
 pMoment Moment_Set_Second(pMoment pmo, time_t unixtime)
 {
+    if (pmo == NULL)
+    {
+        return NULL;
+    }
+
     pmo->sec = unixtime;
+    pmo->usec = 0;
     return pmo;
 }
 
 // Supported ISO 8601 strings , not valid return NULL;
 pMoment Moment_Parse(char *string)
 {
+    if (string == NULL || *string == '\0')
+    {
+        return NULL;
+    }
+
     pMoment pmo = (pMoment)malloc(sizeof(Moment));
     if (pmo == NULL)
     {
@@ -184,10 +267,8 @@ pMoment Moment_Parse(char *string)
     memset(pmo, 0, sizeof(Moment));
 
     int error = 0;
-    int handled = 0;
     int step = 0;
-    int value = 0;
-    int i = 0, j = 0;
+    int i = 0;
     int sign;
     int tzHour = 0, tzMin = 0;
     int week = 0, day = 0;
@@ -203,7 +284,7 @@ pMoment Moment_Parse(char *string)
             if (isDigit(string + i, 2))
             {
                 tzHour = atoi_len(string + i, 2);
-                i += *(string + 2) == ':' ? 4 : 3;
+                i += *(string + i + 2) == ':' ? 4 : 3;
             }
             else
             {
@@ -248,7 +329,7 @@ pMoment Moment_Parse(char *string)
                 if (isDigit(string + i, 2))
                 {
                     week = atoi_len(string + i, 2);
-                    i += *(string + 2) == '-' ? 4 : 2;
+                    i += *(string + i + 2) == '-' ? 4 : 2;
                 }
                 else
                 {
@@ -422,11 +503,21 @@ pMoment Moment_Parse(char *string)
 // Get
 time_t Moment_Get_Sec(pMoment pmo)
 {
+    if (pmo == NULL)
+    {
+        return 0;
+    }
+
     return pmo->sec;
 }
 
 time_t Moment_Get_Millisecond(pMoment pmo)
 {
+    if (pmo == NULL)
+    {
+        return 0;
+    }
+
     return pmo->sec * 1000 + pmo->usec / 1000;
 }
 
@@ -487,7 +578,7 @@ size_t head_patten_to_str(
     pMoment pmo,
     char *out,
     int outSize,
-    char *format,
+    const char *format,
     int *handledLen)
 {
     size_t outlen = 0;
@@ -727,7 +818,7 @@ size_t head_patten_to_str(
         *handledLen += 2;
         return outlen;
     }
-    else if (strncmp(format, "mm", 1) == 0)
+    else if (strncmp(format, "m", 1) == 0)
     {
         outlen = snprintf(out, outSize, "%d", pmo->timetm.tm_min);
         *handledLen += 1;
@@ -836,7 +927,23 @@ size_t head_patten_to_str(
 // strftime
 char *Moment_strftime(pMoment pmo, char *format)
 {
-    mallocStringBuffer(pmo, strlen(format) * 20);
+    static char *nan = "Invalid date";
+
+    if (pmo == NULL)
+    {
+        return nan;
+    }
+
+    if (format == NULL)
+    {
+        format = "%c";
+    }
+
+    if (!mallocStringBuffer(pmo, (int)strlen(format) * 20 + 1))
+    {
+        return nan;
+    }
+
     //renew tm
     time_t tztime = pmo->sec + pmo->utcOffset;
     gmtime_r(&tztime, &pmo->timetm);
@@ -849,8 +956,8 @@ char *Moment_Format(pMoment pmo, char *format)
 {
     static char *nan = "Invalid date";
     // "2014-09-08T08:02:17-05:00" (ISO 8601, no fractional seconds)
-    static char *defaultFormat = "YYYY-MM-DDTHH:mm:ssZ";
-    char *workFormat = NULL;
+    static const char *defaultFormat = "YYYY-MM-DDTHH:mm:ssZ";
+    const char *workFormat = NULL;
     time_t tztime = 0;
     int formatLen = 0;
     int handledLen = 0;
@@ -877,7 +984,10 @@ char *Moment_Format(pMoment pmo, char *format)
             formatLen = strlen(workFormat);
         }
     }
-    mallocStringBuffer(pmo, formatLen * 3);
+    if (!mallocStringBuffer(pmo, formatLen * 16 + 32))
+    {
+        return nan;
+    }
 
     //renew tm
     tztime = pmo->sec + pmo->utcOffset;
@@ -899,12 +1009,22 @@ char *Moment_Format(pMoment pmo, char *format)
 // TimeZone
 pMoment Moment_Set_utcOffset(pMoment pmo, int utcOffset)
 {
+    if (pmo == NULL)
+    {
+        return NULL;
+    }
+
     pmo->utcOffset = utcOffset;
     return pmo;
 }
 
 int Moment_Get_utcOffset(pMoment pmo)
 {
+    if (pmo == NULL)
+    {
+        return 0;
+    }
+
     return pmo->utcOffset;
 }
 
@@ -912,6 +1032,11 @@ int Moment_Get_utcOffset(pMoment pmo)
 pMoment Moment_Add(pMoment pmo, long int number, char *string)
 {
     time_t tztime;
+
+    if (pmo == NULL || string == NULL)
+    {
+        return NULL;
+    }
 
     if (strcmp(string, "years") == 0 || strcmp(string, "y") == 0)
     {
@@ -949,9 +1074,14 @@ pMoment Moment_Add(pMoment pmo, long int number, char *string)
     }
     else if (strcmp(string, "milliseconds") == 0 || strcmp(string, "ms") == 0)
     {
-        pmo->usec += number;
+        pmo->usec += number * 1000;
         pmo->sec += (pmo->usec / 1000000);
         pmo->usec = pmo->usec % 1000000;
+        if (pmo->usec < 0)
+        {
+            pmo->usec += 1000000;
+            pmo->sec -= 1;
+        }
     }
     return pmo;
 }
@@ -965,6 +1095,12 @@ pMoment Moment_Subtract(pMoment pmo, long int number, char *string)
 pMoment Moment_StartOf(pMoment pmo, char *string)
 {
     time_t tztime;
+
+    if (pmo == NULL || string == NULL)
+    {
+        return NULL;
+    }
+
     if (strcmp(string, "year") == 0)
     {
         tztime = pmo->sec + pmo->utcOffset;
@@ -1036,7 +1172,11 @@ pMoment Moment_StartOf(pMoment pmo, char *string)
 // End of Time
 pMoment Moment_EndOf(pMoment pmo, char *string)
 {
-    time_t tztime;
+    if (pmo == NULL || string == NULL)
+    {
+        return NULL;
+    }
+
     if (strcmp(string, "year") == 0)
     {
         Moment_StartOf(pmo, "year");
@@ -1089,9 +1229,36 @@ pMoment Moment_EndOf(pMoment pmo, char *string)
 // clear
 void Moment_Clear(pMoment pmo)
 {
+    if (pmo == NULL)
+    {
+        return;
+    }
+
     if (pmo->outputStr != NULL)
     {
         free(pmo->outputStr);
     }
     free(pmo);
+}
+
+int Moment_snprintf(char *s, size_t n, char *format, time_t sec)
+{
+    int len = 0;
+    pMoment pmo = NULL;
+
+    if (s == NULL || n == 0)
+    {
+        return 0;
+    }
+
+    pmo = Moment_Second(sec);
+    if (pmo == NULL)
+    {
+        s[0] = '\0';
+        return 0;
+    }
+
+    len = snprintf(s, n, "%s", Moment_Format(pmo, format));
+    Moment_Clear(pmo);
+    return len;
 }

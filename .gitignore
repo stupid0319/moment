@@ -50,3 +50,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Project-local test/build artifacts
+moment_test.exe
+tmp_check.c
+tmp_check.exe
