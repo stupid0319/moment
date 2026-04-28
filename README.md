@@ -1,135 +1,155 @@
 # moment
-Parse, validate, manipulate, and display dates in c.
-***
-# Create moment object
-## pMoment Moment_Now();
-pMoment pmo = Moment_Now();  //Now Time
-## pMoment Moment_Second(time_t unixtime);
-pMoment pmo = Moment_Second(1628578601);
-## pMoment Moment_Millisecond(long int millisecond);
-pMoment pmo = Moment_Millisecond(1628578601000);
-## pMoment Moment_Clone(pMoment pmo_);
-pMoment pmo = Moment_Clone(pmo_);
-## pMoment Moment_Parse(char *string);
-Supported ISO 8601 strings
 
-An ISO 8601 string requires a date part.
-| Example | Description |
-| ---  | --- |
-| 2013-02-08 | A calendar date part |
-| 2013-02 | A month date part |
-| 2013-W06-5 | A week date part |
-| 2013-039 | An ordinal date part |
-| 20130208 | Basic (short) full date |
-| 201303 | Basic (short) year+month |
-| 2013 | Basic (short) year only |
-| 2013W065 | Basic (short) week, weekday |
-| 2013W06 | Basic (short) week only |
-| 2013050 | Basic (short) ordinal date (year + day-of-year) |
-| 2013-02-08T09 | An hour time part separated by a T |
-| 2013-02-08 09 | An hour time part separated by a space |
-| 2013-02-08 09:30 | An hour and minute time part |
-| 2013-02-08 09:30:26 | An hour, minute, and second time part |
-| 2013-02-08 09:30:26.123 | An hour, minute, second, and millisecond time part |
-| 2013-02-08 24:00:00.000 | hour 24, minute, second, millisecond equal 0 means next day at midnight |
-| 20130208T080910,123 | Short date and time up to ms, separated by comma |
-| 20130208T080910.123 | Short date and time up to ms |
-| 20130208T080910 | Short date and time up to seconds |
-| 20130208T0809 | Short date and time up to minutes |
-| 20130208T08 | Short date and time, hours only |
-***
-# Clear moment object.
-## void Moment_Clear(pMoment pmo);
-Moment_Clear(pmo);  //clear moment object
-***
-# Set moment object.
-## pMoment Moment_Set_Clone(pMoment pmo, pMoment pmo_);
-Moment_Set_Clone(pmo, pmo_); //return origin pmo object point;
-## pMoment Moment_Set_utcOffset(pMoment pmo, int utcOffset);
-Moment_Set_utcOffset(pmo, 28800);  //set +8 timezone and return origin pmo;
-***
-# Get moment object value.
-## time_t Moment_Get_Sec(pMoment moment);
-## time_t Moment_Get_Millisecond(pMoment pmo);
-***
-# Get the maximum of the given moment instances. 
-## pMoment Moment_Max(pMoment pmo, ...);
-Moment_Max(a, b, c, d, e, NULL); //last param is NULL
-***
-# Get the minimum of the given moment instances.
-## pMoment Moment_Min(pMoment pmo, ...);
-Moment_Min(a, b, c, d, e, NULL); //last param is NULL
-***
-# Format moment object and return formated string
-## char *Moment_Format(pMoment pmo, char *format);
-Moment_Format(pmo, NULL); // "2014-09-08T08:02:17-05:00" (ISO 8601)
+一個以 C 語言實作的時間處理函式庫，提供：
 
-Moment_Format(pmo, "dddd, MMMM Do YYYY, h:mm:ss a");  // "Sunday, February 14th 2010, 3:25:50 pm"
+- 解析日期字串（ISO 8601 子集合）
+- 時間加減、取區間起訖
+- 格式化輸出（moment token + strftime）
+- 比較最大/最小時間
 
-Moment_Format(pmo, "ddd, hA"); // "Sun, 3PM"
+---
 
-Moment_Format(pmo, "YYYY/MM/DD [is] dddd"); // "2021/08/09 is Monday"
+## 1. 專案結構
 
-|  | Token | Output |
-| ---  | --- | --- |
-| Month | M | 1 2 ... 11 12 |
-| | Mo | 1st 2nd ... 11th 12th |
-| | MM | 01 02 ... 11 12 |
-| | MMM | Jan Feb ... Nov Dec |
-| | MMMM | January February ... November December |
-| Day of Month | D | 1 2 ... 30 31 |
-| | Do | 1st 2nd ... 30th 31st |
-| | DD | 01 02 ... 30 31 |
-| Day of Year | DDD | 1 2 ... 364 365 |
-| | DDDo | 1st 2nd ... 364th 365th |
-| | DDDD | 001 002 ... 364 365 |
-| Day of Week | d | 0 1 ... 5 6 |
-| | do | 0th 1st ... 5th 6th |
-| | dd | Su Mo ... Fr Sa |
-| | ddd | Sun Mon ... Fri Sat |
-| | dddd | Sunday Monday ... Friday Saturday |
-| Day of Week (Locale) | e | 0 1 ... 5 6 |
-| Day of Week (ISO) | E | 1 2 ... 6 7 |
-| Week of Year | w | 1 2 ... 52 53 |
-| | wo | 1st 2nd ... 52nd 53rd |
-| | ww | 01 02 ... 52 53 |
-| Week of Year (ISO) | W | 1 2 ... 52 53 |
-| | Wo | 1st 2nd ... 52nd 53rd |
-| | WW | 01 02 ... 52 53 |
-| Year | YY | 70 71 ... 29 30 |
-| | YYYY | 1970 1971 ... 2029 2030 |
-| AM/PM | A | AM PM |
-| | a | am pm |
-| Hour | H | 0 1 ... 22 23 |
-| | HH | 00 01 ... 22 23 |
-| | h | 1 2 ... 11 12 |
-| | hh | 01 02 ... 11 12 |
-| | k |	1 2 ... 23 24 |
-| | kk | 01 02 ... 23 24 | 
-| Minute | m | 0 1 ... 58 59 |
-| | mm | 00 01 ... 58 59 |
-| Second | s | 0 1 ... 58 59 |
-| | ss | 00 01 ... 58 59 |
-| Fractional Second | S | 0 1 ... 8 9 |
-| | SS | 00 01 ... 98 99 |
-| | SSS | 000 001 ... 998 999 |
-| Time Zone | Z | -07:00 -06:00 ... +06:00 +07:00 |
-| | ZZ | -0700 -0600 ... +0600 +0700 |
-| Unix Timestamp | X |1360013296 |
-| Unix Millisecond Timestamp | x | 1360013296123 |
-| Pure text | [...] | [Today is] |
-***
-# Format by strftime 
-## char *Moment_strftime(pMoment pmo, char *format);
-Moment_strftime(mm, "%m/%d/%y %I:%M %p %Z"); //10/19/21 11:45 AM GMT
-***
-# Add / Subtract moment object
-## pMoment Moment_Add(pMoment pmo, long int number, char *string);
-Moment_Add(pmo, 7, "days");  //return origin pmo object point;
-## pMoment Moment_Subtract(pMoment pmo, long int number, char *string);
-Moment_Subtract(pmo, 7, "days");  //return origin pmo object point;
+```text
+src/moment.h    公開 API
+src/moment.c    實作
+tests/test_moment.c  測試程式
+```
 
-| Key | Shorthand |
+---
+
+## 2. 快速開始
+
+### 2.1 編譯（Linux / macOS / MinGW）
+
+```bash
+gcc -Wall -Wextra -std=c11 src/moment.c your_app.c -o your_app
+```
+
+### 2.2 最小範例
+
+```c
+#include <stdio.h>
+#include "src/moment.h"
+
+int main(void)
+{
+	pMoment m = Moment_Now();
+	if (m == NULL)
+	{
+		return 1;
+	}
+
+	printf("now = %s\n", Moment_Format(m, "YYYY-MM-DD HH:mm:ss.SSS Z"));
+	Moment_Clear(m);
+	return 0;
+}
+```
+
+---
+
+## 3. 記憶體與回傳值規則
+
+### 3.1 物件生命週期
+
+- `Moment_Now` / `Moment_Second` / `Moment_Millisecond` / `Moment_Parse` / `Moment_Clone` 會配置新物件。
+- 使用完必須呼叫 `Moment_Clear` 釋放。
+- `Moment_Clear(NULL)` 可安全呼叫。
+
+### 3.2 字串輸出生命週期
+
+- `Moment_Format`、`Moment_strftime` 回傳的是物件內部緩衝區指標。
+- 下一次對同一個 `pMoment` 再次格式化，會覆蓋舊內容。
+- 物件被 `Moment_Clear` 後，該字串指標失效。
+
+### 3.3 錯誤處理
+
+- 物件建立失敗時會回傳 `NULL`。
+- `Moment_Format(NULL, ...)`、`Moment_strftime(NULL, ...)` 會回傳字串 `"Invalid date"`。
+- 多數 API 對 `NULL` 輸入做了保護（回傳 `NULL` 或 `0`）。
+
+---
+
+## 4. API 使用說明
+
+### 4.1 建立與複製
+
+```c
+pMoment Moment_Now(void);
+pMoment Moment_Second(time_t unixtime);
+pMoment Moment_Millisecond(long int millisecond);
+pMoment Moment_Parse(char *string);
+pMoment Moment_Clone(pMoment src);
+```
+
+範例：
+
+```c
+pMoment a = Moment_Now();
+pMoment b = Moment_Second(1628578601);
+pMoment c = Moment_Millisecond(1628578601123);
+pMoment d = Moment_Parse("2013-02-08 09:30:26.123+08:00");
+pMoment e = Moment_Clone(d);
+```
+
+### 4.2 設定與讀取
+
+```c
+pMoment Moment_Set_Clone(pMoment dst, pMoment src);
+pMoment Moment_Set_utcOffset(pMoment m, int utcOffset);
+time_t  Moment_Get_Sec(pMoment m);
+time_t  Moment_Get_Millisecond(pMoment m);
+```
+
+說明：
+
+- `utcOffset` 單位是秒，例如 `+08:00` 請傳 `28800`。
+
+### 4.3 比較
+
+```c
+pMoment Moment_Max(pMoment first, ...);  // 最後一個參數必須是 NULL
+pMoment Moment_Min(pMoment first, ...);  // 最後一個參數必須是 NULL
+```
+
+範例：
+
+```c
+pMoment latest = Moment_Max(a, b, c, NULL);
+pMoment earliest = Moment_Min(a, b, c, NULL);
+```
+
+### 4.4 格式化
+
+```c
+char *Moment_Format(pMoment m, char *format);
+char *Moment_strftime(pMoment m, char *format);
+int   Moment_snprintf(char *buf, size_t n, char *format, time_t sec);
+```
+
+範例：
+
+```c
+printf("%s\n", Moment_Format(m, NULL));
+printf("%s\n", Moment_Format(m, "YYYY/MM/DD HH:mm:ss.SSS Z"));
+printf("%s\n", Moment_strftime(m, "%Y-%m-%d %H:%M:%S"));
+
+char out[64];
+Moment_snprintf(out, sizeof(out), "YYYY-MM-DD", 1700000000);
+printf("%s\n", out);
+```
+
+### 4.5 加減時間
+
+```c
+pMoment Moment_Add(pMoment m, long int number, char *unit);
+pMoment Moment_Subtract(pMoment m, long int number, char *unit);
+```
+
+支援單位：
+
+| 單位 | 縮寫 |
 | --- | --- |
 | years | y |
 | months | M |
@@ -139,22 +159,88 @@ Moment_Subtract(pmo, 7, "days");  //return origin pmo object point;
 | minutes | m |
 | seconds | s |
 | milliseconds | ms |
-***
-# Start of Time / End of Time
-## pMoment Moment_StartOf(pMoment pmo, char *string);
-Moment_StartOf(pmo, "year");  //return origin pmo object point;
 
-| Key | Memo |
-| --- | --- |
-| year | set to January 1st, 12:00 am this year |
-| month | set to the first of this month, 12:00 am |
-| week | set to the first day of this week, 12:00 am |
-| day | set to 12:00 am today |
-| date | set to 12:00 am today |
-| hour | set to now, but with 0 mins, 0 secs, and 0 ms |
-| minute | set to now, but with 0 seconds and 0 milliseconds |
-| second | set to 0 milliseconds |
+### 4.6 區間起訖
 
-## pMoment Moment_EndOf(pMoment pmo, char *string);
-Moment_EndOf(pmo, "year");  //return origin pmo object point;
-***
+```c
+pMoment Moment_StartOf(pMoment m, char *unit);
+pMoment Moment_EndOf(pMoment m, char *unit);
+```
+
+支援單位：
+
+- `year`
+- `month`
+- `week`
+- `day` / `date`
+- `hour`
+- `minute`
+- `second`
+
+---
+
+## 5. Moment_Format Token 對照
+
+| 類別 | Token | 範例輸出 |
+| --- | --- | --- |
+| Year | `YY` / `YYYY` | `24` / `2024` |
+| Month | `M` `MM` `MMM` `MMMM` `Mo` | `8` `08` `Aug` `August` `8th` |
+| Day | `D` `DD` `Do` | `9` `09` `9th` |
+| Day of Year | `DDD` `DDDD` `DDDo` | `221` `221` `221st` |
+| Weekday | `d` `dd` `ddd` `dddd` `do` | `1` `Mo` `Mon` `Monday` `1st` |
+| Week | `w` `ww` `wo` / `W` `WW` `Wo` | `32` `32` `32nd` |
+| Hour | `H` `HH` `h` `hh` `k` `kk` | `3` `03` `3` `03` `4` `04` |
+| Minute | `m` `mm` | `5` `05` |
+| Second | `s` `ss` | `7` `07` |
+| Fraction | `S` `SS` `SSS` | `1` `12` `123` |
+| Meridiem | `A` / `a` | `AM` / `am` |
+| Timezone | `Z` / `ZZ` | `+08:00` / `+0800` |
+| Unix | `X` / `x` | `1700000000` / `1700000000123` |
+| Literal | `[text]` | 直接輸出 `text` |
+
+---
+
+## 6. Moment_Parse 支援格式（ISO 8601 子集合）
+
+可解析日期 + 可選時間 + 可選時區，例如：
+
+- `2013-02-08`
+- `20130208`
+- `2013-02`
+- `2013-W06-5`
+- `2013-039`
+- `2013-02-08T09`
+- `2013-02-08 09:30`
+- `2013-02-08 09:30:26`
+- `2013-02-08 09:30:26.123`
+- `20130208T080910.123`
+- `2013-02-08T09:30:26+08:00`
+- `2013-02-08T01:30:26Z`
+
+不合法字串會回傳 `NULL`。
+
+---
+
+## 7. 測試
+
+### 7.1 編譯並執行
+
+```bash
+gcc -Wall -Wextra -std=c11 src/moment.c tests/test_moment.c -o moment_test.exe
+./moment_test.exe
+```
+
+測試涵蓋：
+
+- 所有公開 API
+- `NULL` / 無效輸入防呆
+- `malloc` 失敗路徑的回傳檢查（可透過注入方式擴充）
+- 格式化、加減、StartOf/EndOf、Max/Min 行為
+
+---
+
+## 8. 注意事項
+
+- 本專案目前以 GCC/Clang 類環境為主（使用 `timegm`、`gmtime_r`）。
+- `Moment` 結構內含狀態與輸出緩衝，不建議多執行緒同時存取同一個 `pMoment`。
+- 若要長期保存 `Moment_Format` 回傳字串，請自行 `strdup` 複製。
